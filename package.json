@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/mapbox/osm-adiff-parser-saxjs#readme",
   "dependencies": {
-    "rambda": "^0.5.2",
+    "ramda": "^0.23.0",
     "sax": "^1.2.2"
   },
   "devDependencies": {
