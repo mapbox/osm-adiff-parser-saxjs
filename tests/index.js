@@ -1,93 +1,23 @@
-var R = require('ramda');
-var sax = require('sax');
+const fs = require('fs');
+const tape = require('tape');
+const parser = require('../index.js');
 
-// Returns elements grouped by changeset ID.
+const isOSCFile = (filename) => (/^.*\.osc$/).test(filename);
+const stripExtension = (filename) => filename.split('.')[0];
 
-function AugmentedDiffParser (xmlData, changesetsFilter, callback) {
-  var xmlParser = sax.parser(true, { lowercase: true });
-  var currentAction = '';
-  var currentElement = {};
-  var oldElement = {};
-  var currentMember = {};
-  var currentMode = '';
-  var changesetMap = {};
+const filenames =
+  fs.readdirSync('tests/data', { encoding: 'utf-8' })
+    .filter(isOSCFile)
+    .map(stripExtension);
 
-  function isElement (symbol) {
-    return (symbol === 'node' || symbol === 'way' || symbol === 'relation');
-  }
+filenames.forEach(function(filename) {
+  tape(`testing file: ${filename}`, function(t) {
+    const xml = fs.readFileSync(`tests/data/${filename}.osc`, { encoding: 'utf-8' });
+    const expectedJSON = JSON.parse(fs.readFileSync(`tests/data/${filename}.json`));
 
-  function endTag (symbol) {
-    if (symbol === 'action') {
-      var changeset = currentElement.changeset;
-      if (changesetsFilter && changesetsFilter.length) {
-        if (changesetsFilter.indexOf(changeset) !== -1) {
-          if (changesetMap[changeset]) {
-            changesetMap[changeset].push(currentElement);
-          } else {
-            changesetMap[changeset] = [currentElement];
-          }
-        }
-      } else {
-          if (changesetMap[changeset]) {
-            changesetMap[changeset].push(currentElement);
-          } else {
-            changesetMap[changeset] = [currentElement];
-          }
-      }
-    }
-    if (symbol === 'osm') {
-      callback(null, changesetMap);
-    }
-  }
-
-  function startTag (node) {
-    var symbol = node.name;
-    var attrs = node.attributes;
-
-    if (symbol === 'action') {
-      currentAction = attrs.type;
-    }
-    if (symbol === 'new' || symbol === 'old') {
-      currentMode = symbol;
-    }
-    if (isElement(symbol)) {
-      if (currentMode === 'new' && (currentAction === 'modify' ||
-                                    currentAction === 'delete')) {
-        oldElement = R.clone(currentElement);
-        currentElement = attrs;
-        currentElement.old = oldElement;
-      } else {
-        currentElement = attrs;
-      }
-      currentElement.action = currentAction;
-      currentElement.type = symbol;
-      currentElement.tags = {};
-      if (symbol === 'way') {currentElement.nodes = []; }
-      if (symbol === 'relation') {currentElement.members = []; currentMember = {};}
-    }
-    if (symbol === 'tag' && currentElement) {
-      currentElement.tags[attrs.k] = attrs.v;
-    }
-
-    if (symbol === 'nd' && currentElement && currentElement.type === 'way') {
-      currentElement.nodes.push(attrs);
-    }
-
-    if (symbol === 'nd' && currentElement && currentElement.type === 'relation') {
-      currentMember.nodes.push(attrs);
-    }
-
-    if (symbol === 'member' && currentElement && currentElement.type === 'relation') {
-      currentMember = R.clone(attrs);
-      currentMember.nodes = [];
-      currentElement.members.push(currentMember);
-    }
-  }
-
-  xmlParser.onopentag = startTag;
-  xmlParser.onclosetag = endTag;
-  xmlParser.onerror = function(err) { callback(err, null); };
-  xmlParser.write(xmlData);
-}
-
-module.exports = AugmentedDiffParser;
+    parser(xml, null, function(error, actualJSON) {
+      t.deepEqual(actualJSON, expectedJSON, 'parsed correctly');
+      t.end();
+    });
+  });
+});
