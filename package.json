@@ -1,0 +1,26 @@
+{
+  "name": "osm-adiff-parser-saxjs",
+  "version": "1.0.0",
+  "description": "Browser-compatible version of osm-adiff-parser",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape tests/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mapbox/osm-adiff-parser-saxjs.git"
+  },
+  "author": "Mapbox",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mapbox/osm-adiff-parser-saxjs/issues"
+  },
+  "homepage": "https://github.com/mapbox/osm-adiff-parser-saxjs#readme",
+  "dependencies": {
+    "rambda": "^0.5.2",
+    "sax": "^1.2.2"
+  },
+  "devDependencies": {
+    "tape": "^4.6.3"
+  }
+}
